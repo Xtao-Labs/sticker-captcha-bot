@@ -1,0 +1,7 @@
+pyrogram==2.0.30
+TgCrypto>=1.2.3
+PyYAML>=6.0
+coloredlogs>=15.0.1
+sqlitedict==2.0.0
+apscheduler==3.9.1
+pytz
