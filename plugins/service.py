@@ -21,6 +21,13 @@ async def chat_members_handle(client: Client, message: Message):
         return
     chat = message.chat
     user = message.from_user
+    if message.new_chat_members:
+        for i in message.new_chat_members:
+            if i.is_self:
+                with contextlib.suppress(Exception):
+                    await log(chat, user, "NEW_GROUP")
+                return
+    user = message.new_chat_members[0] if message.new_chat_members else message.from_user
     if user.is_self or user.is_verified or user.is_bot or user.is_deleted or user.is_support:
         return
     try:
