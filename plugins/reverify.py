@@ -1,35 +1,36 @@
 import contextlib
 
+from pyrogram import filters
+from pyrogram.enums import ChatMemberStatus
+
 from datetime import datetime, timedelta
 
-from pyrogram.enums import MessageServiceType
-from pyrogram import filters
-
-from sticker.single_utils import Client, Message
+from pyromod.utils.errors import TimeoutConversationError
+from sticker.single_utils import Message, Client
 from sticker import bot, log
 
-from pyromod.utils.errors import TimeoutConversationError
-
-MSG = """您好 %s ，当前群组开启了验证功能。
+MSG = """您好 %s ，您被管理员要求重新验证。
 
 您需要在 30 秒内发送任意一个 贴纸 来完成验证。"""
 
 
-@bot.on_message(filters.service)
-async def chat_members_handle(client: Client, message: Message):
-    if message.service != MessageServiceType.NEW_CHAT_MEMBERS:
+@bot.on_message(filters=filters.group & filters.command("reverify"))
+async def re_verify(client: Client, message: Message):
+    if not message.from_user or not message.reply_to_message:
+        return
+    if not message.reply_to_message.from_user:
         return
     chat = message.chat
     user = message.from_user
-    if message.new_chat_members:
-        for i in message.new_chat_members:
-            if i.is_self:
-                return
-    user = message.new_chat_members[0] if message.new_chat_members else message.from_user
-    if user.is_self or user.is_verified or user.is_bot or user.is_deleted or user.is_support:
+    member = await client.get_chat_member(chat.id, user.id)
+    if member.status not in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
         return
+
+    user = message.reply_to_message.from_user
+    with contextlib.suppress(Exception):
+        await message.delete()
     try:
-        msg = await message.reply(MSG % user.mention)
+        msg = await message.reply_to_message.reply(MSG % user.mention)
     except Exception as e:
         return
     try:
@@ -38,7 +39,7 @@ async def chat_members_handle(client: Client, message: Message):
             await msg.delete()
         if not msg_.sticker:
             with contextlib.suppress(Exception):
-                await message.delete()
+                await message.reply_to_message.delete()
             with contextlib.suppress(Exception):
                 await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
             with contextlib.suppress(Exception):
@@ -52,8 +53,9 @@ async def chat_members_handle(client: Client, message: Message):
         with contextlib.suppress(Exception):
             await msg.delete()
         with contextlib.suppress(Exception):
-            await message.delete()
+            await message.reply_to_message.delete()
         with contextlib.suppress(Exception):
             await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
         with contextlib.suppress(Exception):
             await log(chat, user, "FAIL_TIMEOUT")
+
