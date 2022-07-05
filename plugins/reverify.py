@@ -27,6 +27,8 @@ async def re_verify(client: Client, message: Message):
         return
 
     user = message.reply_to_message.from_user
+    if user.is_self or user.is_verified or user.is_bot or user.is_deleted or user.is_support:
+        return
     with contextlib.suppress(Exception):
         await message.delete()
     try:
