@@ -7,6 +7,7 @@ bot_token: "TOKEN_HERE"
 
 # Either debug logging is enabled or not
 debug: "False"
+log_channel: "0"
 
 # socks5
 proxy_addr: ""

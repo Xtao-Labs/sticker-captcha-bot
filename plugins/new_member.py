@@ -4,7 +4,7 @@ from pyrogram.types import ChatJoinRequest
 from pyrogram import filters
 
 from sticker.single_utils import Client
-from sticker import bot
+from sticker import bot, log
 
 from pyromod.utils.errors import TimeoutConversationError
 
@@ -25,7 +25,11 @@ async def new_member(client: Client, chat_join_request: ChatJoinRequest):
         with contextlib.suppress(Exception):
             await client.send_message(user.id, MSG_SUCCESS)
         await chat_join_request.approve()
+        with contextlib.suppress(Exception):
+            await log(chat, user, "ACCEPT")
     except TimeoutConversationError:
         with contextlib.suppress(Exception):
             await client.send_message(user.id, MSG_FAILURE)
         await chat_join_request.decline()
+        with contextlib.suppress(Exception):
+            await log(chat, user, "FAIL_TIMEOUT")

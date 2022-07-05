@@ -46,3 +46,18 @@ bot = Client("sticker",
              ipv6=Config.IPV6,
              proxy=Config.PROXY,
              plugins={"root": "plugins"})
+
+
+async def log(chat, user, action):
+    if not Config.LOG_CHANNEL:
+        return
+    me = await bot.get_me()
+    event = {"FAIL_ERROR": "回答错误", "FAIL_TIMEOUT": "回答超时", "ACCEPT": "通过验证", "NEW_GROUP": "加入群组"}
+    msg = """#%s
+群组: %s
+群组id: <code>%s</code>
+用户: #id%s
+OPBot: #bot%s
+事件: %s"""
+    msg %= (action, chat.title, chat.id, user.id if user else "", me.id, event[action])
+    await bot.send_message(Config.LOG_CHANNEL, msg)

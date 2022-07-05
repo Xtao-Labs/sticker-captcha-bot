@@ -34,6 +34,7 @@ class Config:
         API_ID = int(os.environ.get("API_ID", config["api_id"]))
         API_HASH = os.environ.get("API_HASH", config["api_hash"])
         BOT_TOKEN = os.environ.get("BOT_TOKEN", config["bot_token"])
+        LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", config["log_channel"]))
         STRING_SESSION = os.environ.get("STRING_SESSION")
         DEBUG = strtobool(os.environ.get("PGM_DEBUG", config["debug"]))
         IPV6 = strtobool(os.environ.get("PGM_IPV6", config["ipv6"]))

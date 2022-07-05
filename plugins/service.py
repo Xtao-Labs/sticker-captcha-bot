@@ -6,7 +6,7 @@ from pyrogram.enums import MessageServiceType
 from pyrogram import filters
 
 from sticker.single_utils import Client, Message
-from sticker import bot
+from sticker import bot, log
 
 from pyromod.utils.errors import TimeoutConversationError
 
@@ -25,7 +25,10 @@ async def chat_members_handle(client: Client, message: Message):
         return
     try:
         msg = await message.reply(MSG % user.mention)
-        msg_ = await client.listen(message.chat, filters=filters.user(user.id), timeout=30)
+    except Exception as e:
+        return
+    try:
+        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=30)
         with contextlib.suppress(Exception):
             await msg.delete()
         if not msg_.sticker:
@@ -33,8 +36,18 @@ async def chat_members_handle(client: Client, message: Message):
                 await message.delete()
             with contextlib.suppress(Exception):
                 await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
+            with contextlib.suppress(Exception):
+                await log(chat, user, "FAIL_ERROR")
+        with contextlib.suppress(Exception):
+            await msg_.delete()
+        with contextlib.suppress(Exception):
+            await log(chat, user, "ACCEPT")
     except TimeoutConversationError:
+        with contextlib.suppress(Exception):
+            await msg.delete()
         with contextlib.suppress(Exception):
             await message.delete()
         with contextlib.suppress(Exception):
             await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
+        with contextlib.suppress(Exception):
+            await log(chat, user, "FAIL_TIMEOUT")
