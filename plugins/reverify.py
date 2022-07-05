@@ -19,6 +19,7 @@ MSG = """您好 %s ，您被管理员要求重新验证。
 async def re_verify(client: Client, message: Message):
     if not message.from_user or not message.reply_to_message:
         msg: Message = await message.reply("请回复一条消息来使 Ta 重新验证。")
+        add_delete_message_job(message, 10)
         add_delete_message_job(msg, 10)
         return
     if not message.reply_to_message.from_user:
