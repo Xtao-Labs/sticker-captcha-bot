@@ -52,7 +52,8 @@ async def log(chat, user, action):
     if not Config.LOG_CHANNEL:
         return
     me = await bot.get_me()
-    event = {"FAIL_ERROR": "回答错误", "FAIL_TIMEOUT": "回答超时", "ACCEPT": "通过验证", "NEW_GROUP": "加入群组"}
+    event = {"FAIL_ERROR": "回答错误", "FAIL_TIMEOUT": "回答超时", "ACCEPT": "通过验证", "NEW_GROUP": "加入群组",
+             "REQUEST": "发起验证"}
     msg = """#%s
 群组: %s
 群组id: <code>%s</code>

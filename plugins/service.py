@@ -20,7 +20,6 @@ async def chat_members_handle(client: Client, message: Message):
     if message.service != MessageServiceType.NEW_CHAT_MEMBERS:
         return
     chat = message.chat
-    user = message.from_user
     if message.new_chat_members:
         for i in message.new_chat_members:
             if i.is_self:
@@ -33,6 +32,8 @@ async def chat_members_handle(client: Client, message: Message):
     except Exception as e:
         return
     try:
+        with contextlib.suppress(Exception):
+            await log(chat, user, "REQUEST")
         msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=30)
         with contextlib.suppress(Exception):
             await msg.delete()
