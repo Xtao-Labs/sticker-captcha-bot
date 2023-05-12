@@ -36,6 +36,7 @@ async def new_member(client: Client, chat_join_request: ChatJoinRequest):
     except TimeoutConversationError:
         with contextlib.suppress(Exception):
             await client.send_message(user.id, MSG_FAILURE)
-        await chat_join_request.decline()
+        with contextlib.suppress(Exception):
+            await chat_join_request.decline()
         with contextlib.suppress(Exception):
             await log(chat, user, "FAIL_TIMEOUT")
