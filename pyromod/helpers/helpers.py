@@ -1,4 +1,10 @@
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ForceReply
+from pyrogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ForceReply,
+)
 
 
 def ikb(rows=None):
@@ -15,7 +21,7 @@ def ikb(rows=None):
     # return {'inline_keyboard': lines}
 
 
-def btn(text, value, type='callback_data'):
+def btn(text, value, type="callback_data"):
     return InlineKeyboardButton(text, **{type: value})
     # return {'text': text, type: value}
 
@@ -34,13 +40,18 @@ def bki(keyboard):
 
 
 def ntb(button):
-    for btn_type in ['callback_data', 'url', 'switch_inline_query', 'switch_inline_query_current_chat',
-                     'callback_game']:
+    for btn_type in [
+        "callback_data",
+        "url",
+        "switch_inline_query",
+        "switch_inline_query_current_chat",
+        "callback_game",
+    ]:
         value = getattr(button, btn_type)
         if value:
             break
     button = [button.text, value]
-    if btn_type != 'callback_data':
+    if btn_type != "callback_data":
         button.append(btn_type)
     return button
     # return {'text': text, type: value}
@@ -72,4 +83,4 @@ def force_reply(selective=True):
 
 
 def array_chunk(input_, size):
-    return [input_[i:i + size] for i in range(0, len(input_), size)]
+    return [input_[i : i + size] for i in range(0, len(input_), size)]

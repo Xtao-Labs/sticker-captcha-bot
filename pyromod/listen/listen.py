@@ -47,12 +47,8 @@ class Client:
             chat_id = chat.id
 
         future = self.loop.create_future()
-        future.add_done_callback(
-            functools.partial(self.clear_listener, chat_id)
-        )
-        self.listening.update({
-            chat_id: {"future": future, "filters": filters}
-        })
+        future.add_done_callback(functools.partial(self.clear_listener, chat_id))
+        self.listening.update({chat_id: {"future": future, "filters": filters}})
         try:
             return await asyncio.wait_for(future, timeout)
         except asyncio.exceptions.TimeoutError as e:
@@ -73,11 +69,11 @@ class Client:
     @patchable
     def cancel_listener(self, chat_id):
         listener = self.listening.get(chat_id)
-        if not listener or listener['future'].done():
+        if not listener or listener["future"].done():
             return
 
-        listener['future'].set_exception(ListenerCanceled())
-        self.clear_listener(chat_id, listener['future'])
+        listener["future"].set_exception(ListenerCanceled())
+        self.clear_listener(chat_id, listener["future"])
 
     @patchable
     def cancel_all_listener(self):
@@ -95,25 +91,25 @@ class MessageHandler:
     @patchable
     async def resolve_listener(self, client, message, *args):
         listener = client.listening.get(message.chat.id)
-        if listener and not listener['future'].done():
-            listener['future'].set_result(message)
+        if listener and not listener["future"].done():
+            listener["future"].set_result(message)
         else:
-            if listener and listener['future'].done():
-                client.clear_listener(message.chat.id, listener['future'])
+            if listener and listener["future"].done():
+                client.clear_listener(message.chat.id, listener["future"])
             await self.user_callback(client, message, *args)
 
     @patchable
     async def check(self, client, update):
         listener = client.listening.get(update.chat.id)
 
-        if listener and not listener['future'].done():
-            return await listener['filters'](client, update) if callable(listener['filters']) else True
+        if listener and not listener["future"].done():
+            return (
+                await listener["filters"](client, update)
+                if callable(listener["filters"])
+                else True
+            )
 
-        return (
-            await self.filters(client, update)
-            if callable(self.filters)
-            else True
-        )
+        return await self.filters(client, update) if callable(self.filters) else True
 
 
 @patch(pyrogram.types.user_and_chats.chat.Chat)
@@ -152,9 +148,7 @@ class Message(pyrogram.types.Message):
     async def safe_delete(self, revoke: bool = True):
         try:
             return await self._client.delete_messages(
-                chat_id=self.chat.id,
-                message_ids=self.id,
-                revoke=revoke
+                chat_id=self.chat.id, message_ids=self.id, revoke=revoke
             )
         except Exception as e:  # noqa
             return False

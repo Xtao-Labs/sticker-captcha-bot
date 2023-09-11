@@ -15,10 +15,17 @@ async def start(client: Client, message: Message):
         quote=True,
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton(
-                    "Github",
-                    url="https://github.com/Xtao-Labs/sticker-captcha-bot")],
-                [InlineKeyboardButton(
-                    "邀请入群",
-                    url=f"https://t.me/{me.username}?startgroup=start&admin=can_invite_users")]
-            ]))
+                [
+                    InlineKeyboardButton(
+                        "Github", url="https://github.com/Xtao-Labs/sticker-captcha-bot"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "邀请入群",
+                        url=f"https://t.me/{me.username}?startgroup=start&admin=can_invite_users",
+                    )
+                ],
+            ]
+        ),
+    )

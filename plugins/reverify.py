@@ -31,7 +31,13 @@ async def re_verify(client: Client, message: Message):
         return
 
     user = message.reply_to_message.from_user
-    if user.is_self or user.is_verified or user.is_bot or user.is_deleted or user.is_support:
+    if (
+        user.is_self
+        or user.is_verified
+        or user.is_bot
+        or user.is_deleted
+        or user.is_support
+    ):
         return
     member = await client.get_chat_member(chat.id, user.id)
     with contextlib.suppress(Exception):
@@ -47,9 +53,14 @@ async def re_verify(client: Client, message: Message):
         if not msg_.sticker:
             with contextlib.suppress(Exception):
                 await message.reply_to_message.delete()
-            if member.status not in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
+            if member.status not in [
+                ChatMemberStatus.OWNER,
+                ChatMemberStatus.ADMINISTRATOR,
+            ]:
                 with contextlib.suppress(Exception):
-                    await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
+                    await bot.ban_chat_member(
+                        chat.id, user.id, datetime.now() + timedelta(minutes=5)
+                    )
             with contextlib.suppress(Exception):
                 await log(chat, user, "FAIL_ERROR")
         else:
@@ -62,8 +73,13 @@ async def re_verify(client: Client, message: Message):
             await msg.delete()
         with contextlib.suppress(Exception):
             await message.reply_to_message.delete()
-        if member.status not in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
+        if member.status not in [
+            ChatMemberStatus.OWNER,
+            ChatMemberStatus.ADMINISTRATOR,
+        ]:
             with contextlib.suppress(Exception):
-                await bot.ban_chat_member(chat.id, user.id, datetime.now() + timedelta(minutes=5))
+                await bot.ban_chat_member(
+                    chat.id, user.id, datetime.now() + timedelta(minutes=5)
+                )
         with contextlib.suppress(Exception):
             await log(chat, user, "FAIL_TIMEOUT")

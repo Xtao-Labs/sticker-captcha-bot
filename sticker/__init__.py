@@ -37,26 +37,34 @@ start_time = datetime.now(timezone.utc)
 
 with contextlib.suppress(ImportError):
     import uvloop  # noqa
+
     uvloop.install()
 
 if not scheduler.running:
     scheduler.start()
-bot = Client("sticker",
-             bot_token=Config.BOT_TOKEN,
-             session_string=Config.STRING_SESSION,
-             api_id=Config.API_ID,
-             api_hash=Config.API_HASH,
-             ipv6=Config.IPV6,
-             proxy=Config.PROXY,
-             plugins={"root": "plugins"})
+bot = Client(
+    "sticker",
+    bot_token=Config.BOT_TOKEN,
+    session_string=Config.STRING_SESSION,
+    api_id=Config.API_ID,
+    api_hash=Config.API_HASH,
+    ipv6=Config.IPV6,
+    proxy=Config.PROXY,
+    plugins={"root": "plugins"},
+)
 
 
 async def log(chat, user, action):
     if not Config.LOG_CHANNEL:
         return
     me = await bot.get_me()
-    event = {"FAIL_ERROR": "回答错误", "FAIL_TIMEOUT": "回答超时", "ACCEPT": "通过验证", "NEW_GROUP": "加入群组",
-             "REQUEST": "发起验证"}
+    event = {
+        "FAIL_ERROR": "回答错误",
+        "FAIL_TIMEOUT": "回答超时",
+        "ACCEPT": "通过验证",
+        "NEW_GROUP": "加入群组",
+        "REQUEST": "发起验证",
+    }
     msg = """#%s
 群组: %s
 群组id: <code>%s</code>

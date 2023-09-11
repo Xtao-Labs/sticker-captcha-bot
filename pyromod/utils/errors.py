@@ -2,10 +2,9 @@ class TimeoutConversationError(Exception):
     """
     Occurs when the conversation times out.
     """
+
     def __init__(self):
-        super().__init__(
-            "Response read timed out"
-        )
+        super().__init__("Response read timed out")
 
 
 class ListenerCanceled(Exception):
@@ -14,6 +13,4 @@ class ListenerCanceled(Exception):
     """
 
     def __init__(self):
-        super().__init__(
-            "Listener was canceled"
-        )
+        super().__init__("Listener was canceled")
