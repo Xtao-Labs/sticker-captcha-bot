@@ -1,5 +1,6 @@
 import contextlib
 
+from cashews import cache
 from pyrogram.types import ChatJoinRequest
 from pyrogram import filters
 
@@ -20,6 +21,7 @@ MSG_FAILURE = """验证失败，请重试。"""
 @bot.on_chat_join_request()
 async def new_member(client: Client, chat_join_request: ChatJoinRequest):
     chat = chat_join_request.chat
+    await cache.set(f"cid:{chat.id}", "True", expire=3600, exist=True)
     user = chat_join_request.from_user
     add_decline_request_job(chat_join_request)
     try:

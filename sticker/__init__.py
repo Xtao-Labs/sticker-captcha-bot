@@ -1,14 +1,17 @@
 import contextlib
-from coloredlogs import ColoredFormatter
+import sys
+from cashews import cache
 from datetime import datetime, timezone
 from logging import getLogger, StreamHandler, CRITICAL, INFO, basicConfig, DEBUG
 
-from sticker.config import Config
-from sticker.scheduler import scheduler
+from coloredlogs import ColoredFormatter
 import pyromod.listen
 from pyrogram import Client
-import sys
 
+from sticker.config import Config
+from sticker.scheduler import scheduler
+
+cache.setup("mem://")
 logs = getLogger(__name__)
 logging_format = "%(levelname)s [%(asctime)s] [%(name)s] %(message)s"
 logging_handler = StreamHandler()

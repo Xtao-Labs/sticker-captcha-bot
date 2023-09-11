@@ -38,7 +38,7 @@ async def re_verify(client: Client, message: Message):
         await message.delete()
     try:
         msg = await message.reply_to_message.reply(MSG % user.mention)
-    except Exception as e:
+    except Exception as _:
         return
     try:
         msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=30)
