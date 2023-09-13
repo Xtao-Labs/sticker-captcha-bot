@@ -60,6 +60,8 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
     from_user = chat_member_updated.from_user
     if from_user and from_user.id == user.id:
         from_user = None
+    if from_user.is_self:
+        return
     if (
         user
         and from_user
