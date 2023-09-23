@@ -23,7 +23,6 @@ ADMIN_MSG = """管理员邀请，自动放行。"""
 @bot.on_chat_member_updated()
 async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
     chat = chat_member_updated.chat
-    old_chat_member = chat_member_updated.old_chat_member
     if await cache.get(f"cid:{chat.id}"):
         return
     member = chat_member_updated.new_chat_member
@@ -60,7 +59,7 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
     from_user = chat_member_updated.from_user
     if from_user and from_user.id == user.id:
         from_user = None
-    if from_user.is_self:
+    if from_user and from_user.is_self:
         return
     if (
         user
