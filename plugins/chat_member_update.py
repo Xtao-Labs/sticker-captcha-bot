@@ -8,6 +8,7 @@ from pyrogram.types import ChatMemberUpdated
 
 from pyromod.utils.errors import TimeoutConversationError
 from sticker.scheduler import add_delete_message_job
+from sticker.service_message import ServiceMessage
 from sticker.single_utils import Client
 from sticker import bot, log
 
@@ -90,6 +91,7 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
                 )
             with contextlib.suppress(Exception):
                 await log(chat, user, "FAIL_ERROR")
+            await ServiceMessage.try_delete(user.id, chat.id)
         else:
             with contextlib.suppress(Exception):
                 await log(chat, user, "ACCEPT")
@@ -104,3 +106,4 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
             )
         with contextlib.suppress(Exception):
             await log(chat, user, "FAIL_TIMEOUT")
+        await ServiceMessage.try_delete(user.id, chat.id)
