@@ -41,7 +41,7 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
     if (
         old_user
         and old_user.id == user.id
-        and old_user.status
+        and old_member.status
         in {
             ChatMemberStatus.ADMINISTRATOR,
             ChatMemberStatus.OWNER,
