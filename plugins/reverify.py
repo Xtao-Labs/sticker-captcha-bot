@@ -5,8 +5,8 @@ from pyrogram.enums import ChatMemberStatus
 
 from datetime import datetime, timedelta
 
-from plugins.languages import RE_MSG, VERIFY_TIME
 from pyromod.utils.errors import TimeoutConversationError
+from sticker.languages import RE_MSG, VERIFY_TIME
 from sticker.scheduler import add_delete_message_job
 from sticker.single_utils import Message, Client
 from sticker import bot, log
@@ -40,7 +40,7 @@ async def re_verify(client: Client, message: Message):
     with contextlib.suppress(Exception):
         await message.delete()
     try:
-        msg = await message.reply_to_message.reply(RE_MSG % user.mention)
+        msg = await message.reply_to_message.reply(RE_MSG % (user.mention, user.mention))
     except Exception as _:
         return
     try:

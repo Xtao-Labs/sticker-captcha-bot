@@ -6,8 +6,8 @@ from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.types import ChatMemberUpdated
 
-from plugins.languages import MSG_PUBLIC, ADMIN_MSG, MSG, VERIFY_TIME
 from pyromod.utils.errors import TimeoutConversationError
+from sticker.languages import MSG_PUBLIC, ADMIN_MSG, MSG, VERIFY_TIME
 from sticker.scheduler import add_delete_message_job
 from sticker.service_message import ServiceMessage
 from sticker.single_utils import Client
@@ -68,7 +68,7 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
         add_delete_message_job(msg)
         return
     try:
-        msg = await client.send_message(chat.id, MSG % user.mention)
+        msg = await client.send_message(chat.id, MSG % (user.mention, user.mention))
     except Exception:
         return
     try:
