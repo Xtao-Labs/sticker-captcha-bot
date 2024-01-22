@@ -32,7 +32,6 @@ class Client(Client):  # noqa
 
     def cancel_listener(self, chat_id):
         """Cancel the conversation with the given chat_id."""
-        return
 
 
 class Message(Message):  # noqa

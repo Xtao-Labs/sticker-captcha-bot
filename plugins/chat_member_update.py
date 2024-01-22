@@ -6,19 +6,12 @@ from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.types import ChatMemberUpdated
 
+from plugins.languages import MSG_PUBLIC, ADMIN_MSG, MSG, VERIFY_TIME
 from pyromod.utils.errors import TimeoutConversationError
 from sticker.scheduler import add_delete_message_job
 from sticker.service_message import ServiceMessage
 from sticker.single_utils import Client
 from sticker import bot, log
-
-MSG_PUBLIC = """您好，我发现此群组为公开群组，您需要联系创建者打开 `管理员批准后才能入群` 功能，我就能更好地工作。"""
-MSG_SUCCESS = """验证成功，您已经成为群组的一员了！"""
-MSG_FAILURE = """验证失败，请重试。"""
-MSG = """您好 %s ，当前群组开启了验证功能。
-
-您需要在 30 秒内发送任意一个 贴纸 来完成验证。"""
-ADMIN_MSG = """管理员邀请，自动放行。"""
 
 
 @bot.on_chat_member_updated()
@@ -81,7 +74,7 @@ async def invite(client: Client, chat_member_updated: ChatMemberUpdated):
     try:
         with contextlib.suppress(Exception):
             await log(chat, user, "REQUEST")
-        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=30)
+        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME)
         with contextlib.suppress(Exception):
             await msg.delete()
         if not msg_.sticker:

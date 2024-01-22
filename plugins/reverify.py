@@ -5,14 +5,11 @@ from pyrogram.enums import ChatMemberStatus
 
 from datetime import datetime, timedelta
 
+from plugins.languages import RE_MSG, VERIFY_TIME
 from pyromod.utils.errors import TimeoutConversationError
 from sticker.scheduler import add_delete_message_job
 from sticker.single_utils import Message, Client
 from sticker import bot, log
-
-MSG = """您好 %s ，您被管理员要求重新验证。
-
-您需要在 30 秒内发送任意一个 贴纸 来完成验证。"""
 
 
 @bot.on_message(filters=filters.group & filters.command("reverify"))
@@ -43,11 +40,11 @@ async def re_verify(client: Client, message: Message):
     with contextlib.suppress(Exception):
         await message.delete()
     try:
-        msg = await message.reply_to_message.reply(MSG % user.mention)
+        msg = await message.reply_to_message.reply(RE_MSG % user.mention)
     except Exception as _:
         return
     try:
-        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=30)
+        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME)
         with contextlib.suppress(Exception):
             await msg.delete()
         if not msg_.sticker:
