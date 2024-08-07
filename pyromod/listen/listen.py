@@ -19,16 +19,18 @@ along with pyromod.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import asyncio
+import contextlib
 import functools
 
 import pyrogram
 
-from typing import Dict
 from sticker.scheduler import add_delete_message_job
 from ..utils import patch, patchable
 from ..utils.errors import ListenerCanceled, TimeoutConversationError
 
 pyrogram.errors.ListenerCanceled = ListenerCanceled
+LOCK = asyncio.Lock()
+DONE = []
 
 
 @patch(pyrogram.client.Client)
@@ -63,8 +65,9 @@ class Client:
 
     @patchable
     def clear_listener(self, chat_id, future):
-        if future == self.listening[chat_id]["future"]:
-            self.listening.pop(chat_id, None)
+        with contextlib.suppress(KeyError):
+            if future == self.listening[chat_id]["future"]:
+                self.listening.pop(chat_id, None)
 
     @patchable
     def cancel_listener(self, chat_id):
@@ -90,25 +93,33 @@ class MessageHandler:
 
     @patchable
     async def resolve_listener(self, client, message, *args):
-        listener = client.listening.get(message.chat.id)
-        if listener and not listener["future"].done():
-            listener["future"].set_result(message)
-        else:
+        global LOCK, DONE
+        async with LOCK:
+            listener = client.listening.get(message.chat.id)
+            if listener:
+                with contextlib.suppress(ValueError):
+                    DONE.remove(listener)
+            if listener and not listener["future"].done():
+                listener["future"].set_result(message)
+                return
             if listener and listener["future"].done():
                 client.clear_listener(message.chat.id, listener["future"])
-            await self.user_callback(client, message, *args)
+        await self.user_callback(client, message, *args)
 
     @patchable
     async def check(self, client, update):
-        listener = client.listening.get(update.chat.id)
-
-        if listener and not listener["future"].done():
-            return (
-                await listener["filters"](client, update)
-                if callable(listener["filters"])
-                else True
-            )
-
+        global LOCK, DONE
+        async with LOCK:
+            listener = client.listening.get(update.chat.id)
+            if listener and (listener not in DONE) and (not listener["future"].done()):
+                if callable(listener["filters"]):
+                    result = await listener["filters"](client, update)
+                    if result:
+                        DONE.append(listener)
+                    return result
+                else:
+                    DONE.append(listener)
+                    return True
         return await self.filters(client, update) if callable(self.filters) else True
 
 

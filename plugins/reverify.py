@@ -1,25 +1,23 @@
-import contextlib
-
+from cashews import cache
 from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
 
-from datetime import datetime, timedelta
-
 from pyromod.utils.errors import TimeoutConversationError
 from sticker.languages import RE_MSG, VERIFY_TIME
-from sticker.scheduler import add_delete_message_job
+from sticker.scheduler import add_ban_chat_member_job
 from sticker.single_utils import Message, Client
-from sticker import bot, log
+from sticker import bot, log, LogAction
 
 
 @bot.on_message(filters=filters.group & filters.command("reverify"))
 async def re_verify(client: Client, message: Message):
-    if not message.from_user or not message.reply_to_message:
+    reply_to: "Message" = message.reply_to_message
+    if not message.from_user or not reply_to:
         msg: Message = await message.reply("请回复一条消息来使 Ta 重新验证。")
-        add_delete_message_job(message, 10)
-        add_delete_message_job(msg, 10)
+        await message.delay_delete(10)
+        await msg.delay_delete(10)
         return
-    if not message.reply_to_message.from_user:
+    if not reply_to.from_user:
         return
     chat = message.chat
     user = message.from_user
@@ -27,7 +25,7 @@ async def re_verify(client: Client, message: Message):
     if member.status not in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
         return
 
-    user = message.reply_to_message.from_user
+    user = reply_to.from_user
     if (
         user.is_self
         or user.is_verified
@@ -37,46 +35,36 @@ async def re_verify(client: Client, message: Message):
     ):
         return
     member = await client.get_chat_member(chat.id, user.id)
-    with contextlib.suppress(Exception):
-        await message.delete()
+    await message.delay_delete(1)
+    key = f"wait:{chat.id}:{user.id}"
+    await cache.set(key, "True", expire=VERIFY_TIME + 5)
     try:
-        msg = await message.reply_to_message.reply(RE_MSG % (user.mention, user.mention))
+        msg = await reply_to.reply(RE_MSG % (user.mention, user.mention))
     except Exception as _:
         return
     try:
-        msg_ = await client.listen(chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME)
-        with contextlib.suppress(Exception):
-            await msg.delete()
+        msg_ = await client.listen(
+            chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME
+        )
+        await msg.delay_delete(1)
+        await msg_.delay_delete(1)
         if not msg_.sticker:
-            with contextlib.suppress(Exception):
-                await message.reply_to_message.delete()
+            await reply_to.delay_delete(1)
             if member.status not in [
                 ChatMemberStatus.OWNER,
                 ChatMemberStatus.ADMINISTRATOR,
             ]:
-                with contextlib.suppress(Exception):
-                    await bot.ban_chat_member(
-                        chat.id, user.id, datetime.now() + timedelta(minutes=5)
-                    )
-            with contextlib.suppress(Exception):
-                await log(chat, user, "FAIL_ERROR")
+                add_ban_chat_member_job(chat.id, user.id)
+            await log(chat, user, LogAction.FAIL_ERROR)
         else:
-            with contextlib.suppress(Exception):
-                await log(chat, user, "ACCEPT")
-        with contextlib.suppress(Exception):
-            await msg_.delete()
+            await cache.delete(key)
+            await log(chat, user, LogAction.ACCEPT)
     except TimeoutConversationError:
-        with contextlib.suppress(Exception):
-            await msg.delete()
-        with contextlib.suppress(Exception):
-            await message.reply_to_message.delete()
+        await msg.delay_delete(1)
+        await reply_to.delay_delete(1)
         if member.status not in [
             ChatMemberStatus.OWNER,
             ChatMemberStatus.ADMINISTRATOR,
         ]:
-            with contextlib.suppress(Exception):
-                await bot.ban_chat_member(
-                    chat.id, user.id, datetime.now() + timedelta(minutes=5)
-                )
-        with contextlib.suppress(Exception):
-            await log(chat, user, "FAIL_TIMEOUT")
+            add_ban_chat_member_job(chat.id, user.id)
+        await log(chat, user, LogAction.FAIL_TIMEOUT)
