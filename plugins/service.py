@@ -2,7 +2,7 @@ from pyrogram import filters
 from pyrogram.enums import MessageServiceType
 
 from sticker import bot
-from sticker.service_message import ServiceMessage
+from sticker.functions.service_message import ServiceMessage
 from sticker.single_utils import Client, Message
 
 

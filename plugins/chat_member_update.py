@@ -1,4 +1,8 @@
+import asyncio
 import contextlib
+from asyncio import sleep
+from time import time
+from typing import Dict
 
 from cashews import cache
 from pyrogram import filters
@@ -7,27 +11,58 @@ from pyrogram.types import ChatMemberUpdated
 
 from pyromod.utils.errors import TimeoutConversationError
 from sticker.languages import MSG_PUBLIC, ADMIN_MSG, MSG, VERIFY_TIME
-from sticker.scheduler import add_ban_chat_member_job
-from sticker.service_message import ServiceMessage
+from sticker.scheduler import add_ban_chat_member_job, add_delete_message_id_job
+from sticker.functions.service_message import ServiceMessage
 from sticker.single_utils import Client, Message
 from sticker import bot, log, LogAction
 
 
+lock_map_lock = asyncio.Lock()
+lock_map: Dict[int, asyncio.Lock] = {}
+
+
+async def get_lock(chat_id: int):
+    async with lock_map_lock:
+        lock = lock_map.get(chat_id)
+        if not lock:
+            lock = asyncio.Lock()
+            lock_map[chat_id] = lock
+    return lock
+
+
+async def send_message(client: "Client", chat, user):
+    n_time = time()
+    lock = await get_lock(chat.id)
+    async with lock:
+        if time() - n_time > 30:
+            # 认为此任务已过期
+            return
+        try:
+            key = f"msg:{chat.id}:{user.id}"
+            msg: "Message" = await client.send_message(
+                chat.id, MSG % (user.mention, user.mention)
+            )
+            await msg.delay_delete(VERIFY_TIME + 5)
+            await cache.set(key, msg.id, expire=VERIFY_TIME + 5)
+        except Exception:
+            return
+        await log(chat, user, LogAction.REQUEST)
+
+
 async def start_verify(client: "Client", chat, user):
     key = f"wait:{chat.id}:{user.id}"
+    key2 = f"msg:{chat.id}:{user.id}"
     await cache.set(key, "True", expire=VERIFY_TIME + 5)
-    try:
-        msg: "Message" = await client.send_message(
-            chat.id, MSG % (user.mention, user.mention)
-        )
-    except Exception:
-        return
-    await log(chat, user, LogAction.REQUEST)
+    client.loop.create_task(send_message(client, chat, user))
     try:
         msg_: "Message" = await client.listen(
-            chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME
+            chat.id,
+            filters=filters.user(user.id) & ~filters.service,
+            timeout=VERIFY_TIME,
         )
-        await msg.delay_delete(1)
+        msg = await cache.get(key2)
+        if msg:
+            add_delete_message_id_job(chat.id, msg)
         await msg_.delay_delete(1)
         if not msg_.sticker:
             add_ban_chat_member_job(chat.id, user.id)
@@ -37,7 +72,9 @@ async def start_verify(client: "Client", chat, user):
             await cache.delete(key)
             await log(chat, user, LogAction.ACCEPT)
     except TimeoutConversationError:
-        await msg.delay_delete(1)
+        msg = await cache.get(key2)
+        if msg:
+            add_delete_message_id_job(chat.id, msg)
         add_ban_chat_member_job(chat.id, user.id)
         await log(chat, user, LogAction.FAIL_TIMEOUT)
         await ServiceMessage.try_delete(user.id, chat.id)

@@ -18,6 +18,15 @@ async def delete_message(message: Message) -> bool:
     return False
 
 
+async def delete_message_id(chat_id: int, message_id: int) -> bool:
+    with contextlib.suppress(Exception):
+        from sticker.bot import bot
+
+        await bot.delete_messages(chat_id, message_id)
+        return True
+    return False
+
+
 async def decline_request(chat_join_request: ChatJoinRequest):
     with contextlib.suppress(Exception):
         await chat_join_request.decline()
@@ -34,6 +43,19 @@ async def ban_chat_member(chat_id: int, user_id: int):
         )
         return True
     return False
+
+
+def add_delete_message_id_job(chat_id: int, message_id: int, delete_seconds: int = 60):
+    scheduler.add_job(
+        delete_message_id,
+        "date",
+        id=f"{chat_id}|{message_id}|delete_message",
+        name=f"{chat_id}|{message_id}|delete_message",
+        args=[chat_id, message_id],
+        run_date=datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
+        + datetime.timedelta(seconds=delete_seconds),
+        replace_existing=True,
+    )
 
 
 def add_delete_message_job(message: Message, delete_seconds: int = 60):

@@ -1,24 +1,7 @@
-import contextlib
-from os import sep, remove, mkdir
-from os.path import exists
 from typing import Optional
 
 from pyrogram import Client
 from pyrogram.types import Message
-
-from pyromod.utils.errors import TimeoutConversationError, ListenerCanceled
-
-from sqlitedict import SqliteDict
-
-# init folders
-if not exists("data"):
-    mkdir("data")
-sqlite = SqliteDict(f"data{sep}data.sqlite", autocommit=True)
-
-
-def safe_remove(name: str) -> None:
-    with contextlib.suppress(FileNotFoundError):
-        remove(name)
 
 
 class Client(Client):  # noqa

@@ -16,9 +16,7 @@ class ServiceMessage:
     @staticmethod
     async def get_cache(uid: int, cid: int) -> List[int]:
         data = await cache.get(f"service_message:{uid}:{cid}")
-        if data:
-            return data
-        return []
+        return data or []
 
     @staticmethod
     async def try_delete(uid: int, cid: int):

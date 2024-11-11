@@ -1,8 +1,8 @@
-pyrogram==2.0.106
-TgCrypto>=1.2.3
+git+https://github.com/TeamPGM/pyrogram
+PyroTgCrypto==1.2.6a0
 PyYAML==6.0.1
 coloredlogs>=15.0.1
 sqlitedict==2.1.0
 apscheduler==3.10.4
-cashews==6.2.0
+cashews==7.2.0
 pytz

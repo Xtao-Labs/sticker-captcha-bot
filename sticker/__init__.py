@@ -7,9 +7,8 @@ from datetime import datetime, timezone
 from logging import getLogger, StreamHandler, CRITICAL, INFO, basicConfig, DEBUG
 
 from coloredlogs import ColoredFormatter
-import pyromod.listen
-from pyrogram import Client
 
+from sticker.bot import bot
 from sticker.config import Config
 from sticker.scheduler import scheduler
 
@@ -44,16 +43,6 @@ with contextlib.suppress(ImportError):
 
 if not scheduler.running:
     scheduler.start()
-bot = Client(
-    "sticker",
-    bot_token=Config.BOT_TOKEN,
-    session_string=Config.STRING_SESSION,
-    api_id=Config.API_ID,
-    api_hash=Config.API_HASH,
-    ipv6=Config.IPV6,
-    proxy=Config.PROXY,
-    plugins={"root": "plugins"},
-)
 
 
 class LogAction(str, Enum):

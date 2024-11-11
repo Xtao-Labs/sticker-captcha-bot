@@ -1,7 +1,6 @@
 import os
-from json import load as load_json
 import sys
-from yaml import load, FullLoader, safe_load
+from yaml import load, FullLoader
 from shutil import copyfile
 
 
