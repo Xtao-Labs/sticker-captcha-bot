@@ -31,6 +31,7 @@ from ..utils.errors import ListenerCanceled, TimeoutConversationError
 pyrogram.errors.ListenerCanceled = ListenerCanceled
 LOCK = asyncio.Lock()
 DONE = []
+DONE_MAP = {}
 
 
 @patch(pyrogram.client.Client)
@@ -96,14 +97,15 @@ class MessageHandler:
         global LOCK, DONE
         async with LOCK:
             listener = client.listening.get(message.chat.id)
-            if listener:
+            if listener and DONE_MAP.get(id(self)) == id(listener):
                 with contextlib.suppress(ValueError):
                     DONE.remove(listener)
-            if listener and not listener["future"].done():
-                listener["future"].set_result(message)
-                return
-            if listener and listener["future"].done():
-                client.clear_listener(message.chat.id, listener["future"])
+                    del DONE_MAP[id(self)]
+                if not listener["future"].done():
+                    listener["future"].set_result(message)
+                    return
+                if listener["future"].done():
+                    client.clear_listener(message.chat.id, listener["future"])
         await self.user_callback(client, message, *args)
 
     @patchable
@@ -116,9 +118,11 @@ class MessageHandler:
                     result = await listener["filters"](client, update)
                     if result:
                         DONE.append(listener)
-                    return result
+                        DONE_MAP[id(self)] = id(listener)
+                        return True
                 else:
                     DONE.append(listener)
+                    DONE_MAP[id(self)] = id(listener)
                     return True
         return await self.filters(client, update) if callable(self.filters) else True
 

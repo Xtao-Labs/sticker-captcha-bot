@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-from asyncio import sleep
 from time import time
 from typing import Dict
 
@@ -62,7 +61,7 @@ async def start_verify(client: "Client", chat, user):
         )
         msg = await cache.get(key2)
         if msg:
-            add_delete_message_id_job(chat.id, msg)
+            add_delete_message_id_job(chat.id, msg, 1)
         await msg_.delay_delete(1)
         if not msg_.sticker:
             add_ban_chat_member_job(chat.id, user.id)
@@ -74,7 +73,7 @@ async def start_verify(client: "Client", chat, user):
     except TimeoutConversationError:
         msg = await cache.get(key2)
         if msg:
-            add_delete_message_id_job(chat.id, msg)
+            add_delete_message_id_job(chat.id, msg, 1)
         add_ban_chat_member_job(chat.id, user.id)
         await log(chat, user, LogAction.FAIL_TIMEOUT)
         await ServiceMessage.try_delete(user.id, chat.id)

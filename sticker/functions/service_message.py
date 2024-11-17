@@ -1,9 +1,8 @@
-import contextlib
 from typing import List
 
 from cashews import cache
 
-from sticker import bot
+from sticker.scheduler import add_delete_message_id_job
 
 
 class ServiceMessage:
@@ -22,5 +21,4 @@ class ServiceMessage:
     async def try_delete(uid: int, cid: int):
         mid = await ServiceMessage.get_cache(uid, cid)
         if mid:
-            with contextlib.suppress(Exception):
-                await bot.delete_messages(cid, list(mid))
+            add_delete_message_id_job(cid, list(mid), 1)

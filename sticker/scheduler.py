@@ -1,5 +1,6 @@
 import contextlib
 import datetime
+from typing import Union, List
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -18,7 +19,7 @@ async def delete_message(message: Message) -> bool:
     return False
 
 
-async def delete_message_id(chat_id: int, message_id: int) -> bool:
+async def delete_message_id(chat_id: int, message_id: Union[int, List[int]]) -> bool:
     with contextlib.suppress(Exception):
         from sticker.bot import bot
 
@@ -45,7 +46,9 @@ async def ban_chat_member(chat_id: int, user_id: int):
     return False
 
 
-def add_delete_message_id_job(chat_id: int, message_id: int, delete_seconds: int = 60):
+def add_delete_message_id_job(
+    chat_id: int, message_id: Union[int, List[int]], delete_seconds: int = 60
+):
     scheduler.add_job(
         delete_message_id,
         "date",
