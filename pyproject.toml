@@ -1,0 +1,24 @@
+[project]
+name = "sticker-captcha-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "apscheduler>=3.11.0",
+    "cashews>=7.4.2",
+    "coloredlogs>=15.0.1",
+    "pyrogram",
+    "pyrotgcrypto>=1.2.7",
+    "pytz>=2025.2",
+    "pyyaml>=6.0.3",
+    "sqlitedict>=2.1.0",
+]
+
+[tool.uv.sources]
+pyrogram = { git = "https://github.com/TeamPGM/pyrogram" }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+]

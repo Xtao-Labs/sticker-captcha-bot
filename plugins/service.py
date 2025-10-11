@@ -17,7 +17,7 @@ async def service_message_handle(_: Client, message: Message):
     )
     if (
         user.is_self
-        or user.is_verified
+        or (user.verification_status and user.verification_status.is_verified)
         or user.is_bot
         or user.is_deleted
         or user.is_support

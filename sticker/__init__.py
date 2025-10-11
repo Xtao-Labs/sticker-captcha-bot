@@ -3,28 +3,14 @@ import sys
 from enum import Enum
 
 from cashews import cache
-from datetime import datetime, timezone
-from logging import getLogger, StreamHandler, CRITICAL, INFO, basicConfig, DEBUG
-
-from coloredlogs import ColoredFormatter
 
 from sticker.bot import bot
 from sticker.config import Config
 from sticker.scheduler import scheduler
 
+from ._log import logs
+
 cache.setup("mem://")
-logs = getLogger(__name__)
-logging_format = "%(levelname)s [%(asctime)s] [%(name)s] %(message)s"
-logging_handler = StreamHandler()
-logging_handler.setFormatter(ColoredFormatter(logging_format))
-root_logger = getLogger()
-root_logger.setLevel(DEBUG if Config.DEBUG else CRITICAL)
-root_logger.addHandler(logging_handler)
-pyro_logger = getLogger("pyrogram")
-pyro_logger.setLevel(INFO if Config.DEBUG else CRITICAL)
-pyro_logger.addHandler(logging_handler)
-basicConfig(level=DEBUG if Config.DEBUG else INFO)
-logs.setLevel(DEBUG if Config.DEBUG else INFO)
 
 # easy check
 if not Config.API_ID:
@@ -34,15 +20,10 @@ elif not Config.API_HASH:
     logs.error("Api-Hash Not Found!")
     sys.exit(1)
 
-start_time = datetime.now(timezone.utc)
-
 with contextlib.suppress(ImportError):
     import uvloop  # noqa
 
     uvloop.install()
-
-if not scheduler.running:
-    scheduler.start()
 
 
 class LogAction(str, Enum):

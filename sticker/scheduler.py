@@ -1,18 +1,25 @@
 import contextlib
 import datetime
-from typing import Union, List
+from typing import Union, List, TYPE_CHECKING
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pyrogram.types import ChatJoinRequest
 
 from sticker.languages import VERIFY_TIME
-from sticker.single_utils import Message
+
+if TYPE_CHECKING:
+    from sticker.single_utils import Message
 
 scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
 
 
-async def delete_message(message: Message) -> bool:
+def delay_time(seconds: int) -> datetime.datetime:
+    return datetime.datetime.now(pytz.timezone("Asia/Shanghai")) + datetime.timedelta(
+        seconds=seconds
+    )
+
+
+async def delete_message(message: "Message") -> bool:
     with contextlib.suppress(Exception):
         await message.delete()
         return True
@@ -28,9 +35,20 @@ async def delete_message_id(chat_id: int, message_id: Union[int, List[int]]) -> 
     return False
 
 
-async def decline_request(chat_join_request: ChatJoinRequest):
+async def decline_request(chat_id: int, user_id: int):
     with contextlib.suppress(Exception):
-        await chat_join_request.decline()
+        from sticker.bot import bot
+
+        await bot.decline_chat_join_request(chat_id, user_id)
+        return True
+    return False
+
+
+async def approve_request(chat_id: int, user_id: int):
+    with contextlib.suppress(Exception):
+        from sticker.bot import bot
+
+        await bot.approve_chat_join_request(chat_id, user_id)
         return True
     return False
 
@@ -46,6 +64,15 @@ async def ban_chat_member(chat_id: int, user_id: int):
     return False
 
 
+async def send_message_text(chat_id: int, text: str):
+    from sticker import bot
+
+    with contextlib.suppress(Exception):
+        await bot.send_message(chat_id, text)
+        return True
+    return False
+
+
 def add_delete_message_id_job(
     chat_id: int, message_id: Union[int, List[int]], delete_seconds: int = 60
 ):
@@ -55,34 +82,41 @@ def add_delete_message_id_job(
         id=f"{chat_id}|{message_id}|delete_message",
         name=f"{chat_id}|{message_id}|delete_message",
         args=[chat_id, message_id],
-        run_date=datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
-        + datetime.timedelta(seconds=delete_seconds),
+        run_date=delay_time(delete_seconds),
         replace_existing=True,
     )
 
 
-def add_delete_message_job(message: Message, delete_seconds: int = 60):
+def add_delete_message_job(message: "Message", delete_seconds: int = 60):
     scheduler.add_job(
         delete_message,
         "date",
         id=f"{message.chat.id}|{message.id}|delete_message",
         name=f"{message.chat.id}|{message.id}|delete_message",
         args=[message],
-        run_date=datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
-        + datetime.timedelta(seconds=delete_seconds),
+        run_date=delay_time(delete_seconds),
         replace_existing=True,
     )
 
 
-def add_decline_request_job(chat_join_request: ChatJoinRequest):
+def add_decline_request_job(chat_id: int, user_id: int, timeout: int = VERIFY_TIME):
     scheduler.add_job(
         decline_request,
         "date",
-        id=f"{chat_join_request.chat.id}|{chat_join_request.from_user.id}|decline_request",
-        name=f"{chat_join_request.chat.id}|{chat_join_request.from_user.id}|decline_request",
-        args=[chat_join_request],
-        run_date=datetime.datetime.now(pytz.timezone("Asia/Shanghai"))
-        + datetime.timedelta(seconds=VERIFY_TIME),
+        id=f"{chat_id}|{user_id}|decline_request",
+        name=f"{chat_id}|{user_id}|decline_request",
+        args=[chat_id, user_id],
+        run_date=delay_time(timeout),
+        replace_existing=True,
+    )
+
+
+def add_approve_request_job(chat_id: int, user_id: int):
+    scheduler.add_job(
+        approve_request,
+        id=f"{chat_id}|{user_id}|approve_request",
+        name=f"{chat_id}|{user_id}|approve_request",
+        args=[chat_id, user_id],
         replace_existing=True,
     )
 
@@ -97,8 +131,17 @@ def add_ban_chat_member_job(chat_id: int, user_id: int):
     )
 
 
-def rem_decline_request_job(chat_join_request: ChatJoinRequest):
-    if job := scheduler.get_job(
-        f"{chat_join_request.chat.id}|{chat_join_request.from_user.id}|decline_request"
-    ):
+def add_send_message_text_job(chat_id: int, text: str):
+    hash_text = hash(text)
+    scheduler.add_job(
+        send_message_text,
+        id=f"{chat_id}|{hash_text}|send_message",
+        name=f"{chat_id}|{hash_text}|send_message",
+        args=[chat_id, text],
+        replace_existing=True,
+    )
+
+
+def rem_decline_request_job(chat_id: int, user_id: int):
+    if job := scheduler.get_job(f"{chat_id}|{user_id}|decline_request"):
         job.remove()

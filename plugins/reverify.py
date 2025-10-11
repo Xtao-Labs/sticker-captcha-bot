@@ -1,12 +1,70 @@
+import contextlib
+from functools import partial
+
+from typing import TYPE_CHECKING
+
 from cashews import cache
 from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
 
-from pyromod.utils.errors import TimeoutConversationError
+from sticker.functions.verification_system import verification_system
 from sticker.languages import RE_MSG, VERIFY_TIME
-from sticker.scheduler import add_ban_chat_member_job
+from sticker.scheduler import add_ban_chat_member_job, add_delete_message_id_job
 from sticker.single_utils import Message, Client
 from sticker import bot, log, LogAction
+
+if TYPE_CHECKING:
+    from pyrogram.types import Chat, User, ChatMember
+
+
+async def delete_message(chat: "Chat", user: "User"):
+    key2 = f"msg:{chat.id}:{user.id}"
+    msg = await cache.get(key2)
+    if msg:
+        add_delete_message_id_job(chat.id, msg, 1)
+
+
+async def on_timeout(chat: "Chat", user: "User", member: "ChatMember"):
+    await delete_message(chat, user)
+    if member.status not in [
+        ChatMemberStatus.OWNER,
+        ChatMemberStatus.ADMINISTRATOR,
+    ]:
+        add_ban_chat_member_job(chat.id, user.id)
+    await log(chat, user, LogAction.FAIL_TIMEOUT)
+
+
+async def on_failed(chat: "Chat", user: "User", member: "ChatMember"):
+    await delete_message(chat, user)
+    if member.status not in [
+        ChatMemberStatus.OWNER,
+        ChatMemberStatus.ADMINISTRATOR,
+    ]:
+        add_ban_chat_member_job(chat.id, user.id)
+    await log(chat, user, LogAction.FAIL_ERROR)
+
+
+async def on_success(chat: "Chat", user: "User"):
+    await delete_message(chat, user)
+    await log(chat, user, LogAction.ACCEPT)
+
+
+async def start_verify(reply_to: "Message", chat: "Chat", user: "User"):
+    timeout = partial(on_timeout, chat, user)
+    success = partial(on_success, chat, user)
+    failed = partial(on_failed, chat, user)
+    result = await verification_system.request_verification(
+        chat.id, user.id, success, failed, timeout
+    )
+    if not result:
+        # 重复忽略
+        return
+    with contextlib.suppress(Exception):
+        msg = await reply_to.reply(RE_MSG % (user.mention, user.mention))
+        key = f"msg:{chat.id}:{user.id}"
+        await msg.delay_delete(VERIFY_TIME + 5)
+        await cache.set(key, msg.id, expire=VERIFY_TIME + 5)
+    await log(chat, user, LogAction.REQUEST)
 
 
 @bot.on_message(filters=filters.group & filters.command("reverify"))
@@ -28,7 +86,7 @@ async def re_verify(client: Client, message: Message):
     user = reply_to.from_user
     if (
         user.is_self
-        or user.is_verified
+        or (user.verification_status and user.verification_status.is_verified)
         or user.is_bot
         or user.is_deleted
         or user.is_support
@@ -36,35 +94,9 @@ async def re_verify(client: Client, message: Message):
         return
     member = await client.get_chat_member(chat.id, user.id)
     await message.delay_delete(1)
-    key = f"wait:{chat.id}:{user.id}"
-    await cache.set(key, "True", expire=VERIFY_TIME + 5)
-    try:
-        msg = await reply_to.reply(RE_MSG % (user.mention, user.mention))
-    except Exception as _:
+    if member.status in [
+        ChatMemberStatus.OWNER,
+        ChatMemberStatus.ADMINISTRATOR,
+    ]:
         return
-    try:
-        msg_ = await client.listen(
-            chat.id, filters=filters.user(user.id), timeout=VERIFY_TIME
-        )
-        await msg.delay_delete(1)
-        await msg_.delay_delete(1)
-        if not msg_.sticker:
-            await reply_to.delay_delete(1)
-            if member.status not in [
-                ChatMemberStatus.OWNER,
-                ChatMemberStatus.ADMINISTRATOR,
-            ]:
-                add_ban_chat_member_job(chat.id, user.id)
-            await log(chat, user, LogAction.FAIL_ERROR)
-        else:
-            await cache.delete(key)
-            await log(chat, user, LogAction.ACCEPT)
-    except TimeoutConversationError:
-        await msg.delay_delete(1)
-        await reply_to.delay_delete(1)
-        if member.status not in [
-            ChatMemberStatus.OWNER,
-            ChatMemberStatus.ADMINISTRATOR,
-        ]:
-            add_ban_chat_member_job(chat.id, user.id)
-        await log(chat, user, LogAction.FAIL_TIMEOUT)
+    await start_verify(reply_to, chat, user)
