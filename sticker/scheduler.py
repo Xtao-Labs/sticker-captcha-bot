@@ -10,13 +10,12 @@ from sticker.languages import VERIFY_TIME
 if TYPE_CHECKING:
     from sticker.single_utils import Message
 
-scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
+TZ = pytz.timezone("Asia/Shanghai")
+scheduler = AsyncIOScheduler(timezone=TZ)
 
 
 def delay_time(seconds: int) -> datetime.datetime:
-    return datetime.datetime.now(pytz.timezone("Asia/Shanghai")) + datetime.timedelta(
-        seconds=seconds
-    )
+    return datetime.datetime.now(TZ) + datetime.timedelta(seconds=seconds)
 
 
 async def delete_message(message: "Message") -> bool:
