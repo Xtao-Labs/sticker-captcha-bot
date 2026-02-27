@@ -15,3 +15,7 @@ proxy_port: ""
 
 # ipv6
 ipv6: "False"
+
+# sentry
+sentry_dsn: ""
+sentry_env: "prod"

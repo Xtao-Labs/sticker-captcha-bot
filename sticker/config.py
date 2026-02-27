@@ -1,5 +1,8 @@
 import os
 import sys
+
+import sentry_sdk
+
 from yaml import load, FullLoader
 from shutil import copyfile
 
@@ -47,6 +50,16 @@ class Config:
                 hostname=PROXY_ADDRESS,
                 port=PROXY_PORT,
             )
+        SENTRY_DSN = os.environ.get("SENTRY_DSN", config["sentry_dsn"])
+        SENTRY_ENV = os.environ.get("SENTRY_ENV", config["sentry_env"])
     except ValueError as e:
         print(e)
         sys.exit(1)
+
+
+if Config.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=Config.SENTRY_DSN,
+        environment=Config.SENTRY_ENV,
+        enable_logs=True,
+    )

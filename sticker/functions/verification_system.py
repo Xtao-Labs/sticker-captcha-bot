@@ -1,9 +1,12 @@
 import asyncio
 import time
 import hashlib
+from functools import partial
 from typing import Dict, Tuple, Optional, Callable, Any, TYPE_CHECKING
 
 from dataclasses import dataclass
+
+from sentry_sdk import metrics
 
 from sticker.scheduler import scheduler, delay_time
 from sticker.languages import VERIFY_TIME
@@ -73,6 +76,35 @@ class OptimizedUserVerificationSystem:
         if self._cleanup_task:
             scheduler.remove_job(self._cleanup_task.id)
 
+    @staticmethod
+    async def count_req(key: str, old_func: Callable[[], Any]):
+        metrics.count(key, 1)
+        return await old_func()
+
+    def prepare_func(
+        self,
+        on_success: Callable[[], Any],
+        on_failed: Callable[[], Any],
+        on_timeout: Callable[[], Any],
+    ):
+        metrics.count("captcha.request", 1)
+        on_success = (
+            partial(self.count_req, "captcha.success", on_success)
+            if on_success
+            else on_success
+        )
+        on_failed = (
+            partial(self.count_req, "captcha.failed", on_failed)
+            if on_failed
+            else on_failed
+        )
+        on_timeout = (
+            partial(self.count_req, "captcha.timeout", on_timeout)
+            if on_timeout
+            else on_timeout
+        )
+        return on_success, on_failed, on_timeout
+
     async def request_verification(
         self,
         chat_id: int,
@@ -84,6 +116,10 @@ class OptimizedUserVerificationSystem:
         """
         请求验证 - 使用细粒度锁
         """
+        on_success, on_failed, on_timeout = self.prepare_func(
+            on_success, on_failed, on_timeout
+        )
+
         # 获取该请求对应的锁
         request_lock = self._get_request_lock(user_id)
 
